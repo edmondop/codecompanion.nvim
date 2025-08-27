@@ -1,4 +1,6 @@
 local anthropic = require("codecompanion.adapters.http.anthropic")
+local aws_signing = require("codecompanion.utils.aws_signing")
+local log = require("codecompanion.utils.log")
 
 local bedrock_adapter = vim.deepcopy(anthropic)
 
@@ -38,6 +40,26 @@ bedrock_adapter.handlers.setup = function(self)
     if not model_opts.opts.has_vision then
       self.opts.vision = false
     end
+  end
+
+  -- Set up custom request function to handle AWS signing on each request
+  self.opts = self.opts or {}
+  self.opts.request = function(http_client, payload, actions, opts)
+    -- Get AWS credentials fresh on each request
+    local access_key = self.env.aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
+    local secret_key = self.env.aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
+    local region = self.env.aws_region or os.getenv("AWS_REGION")
+
+    if not access_key or not secret_key or not region then
+      error("AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION) are required for Bedrock adapter")
+    end
+
+    -- Use the AWS signing version of the request method
+    return http_client:request_with_aws_signing(payload, actions, opts, {
+      access_key = access_key,
+      secret_key = secret_key,
+      region = region,
+    })
   end
 
   return true
