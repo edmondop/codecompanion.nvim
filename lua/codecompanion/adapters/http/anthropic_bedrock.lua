@@ -51,6 +51,12 @@ bedrock_adapter.handlers.form_parameters = function(self, params, messages)
   params.model = nil
   params.stream = nil
 
+  -- Bedrock has stricter thinking requirements, disable if not properly configured
+  if params.thinking then
+    params.thinking = nil
+    params.temperature = nil -- Reset temperature if thinking was enabled
+  end
+
   return params
 end
 
@@ -179,36 +185,33 @@ bedrock_adapter.handlers.chat_output = function(self, data, tools)
   end
 end
 
-bedrock_adapter.schema = vim.tbl_deep_extend("force", bedrock_adapter.schema, {
-  model = {
-    order = 1,
-    mapping = "parameters",
-    type = "enum",
-    desc = "AWS Bedrock Anthropic model ID. See https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html for available models.",
-    default = "us.anthropic.claude-3-5-sonnet-20241022-v1:0",
-    choices = {
-      ["us.anthropic.claude-opus-4-20250514-v1:0"] = { opts = { can_reason = true, has_vision = true } },
-      ["us.anthropic.claude-sonnet-4-20250514-v1:0"] = { opts = { can_reason = true, has_vision = true } },
-      ["us.anthropic.claude-3-5-sonnet-20241022-v1:0"] = { opts = { has_vision = true } },
-      ["us.anthropic.claude-3-5-haiku-20241022-v1:0"] = { opts = { has_vision = true } },
-      ["us.anthropic.claude-3-opus-20240229-v1:0"] = { opts = { has_vision = true } },
-      ["us.anthropic.claude-3-sonnet-20240229-v1:0"] = { opts = { has_vision = true } },
-      ["us.anthropic.claude-3-haiku-20240307-v1:0"] = { opts = { has_vision = true } },
-      ["us.anthropic.claude-v2:1"] = {},
-      ["us.anthropic.claude-v2"] = {},
-    },
+bedrock_adapter.schema.model = {
+  order = 1,
+  mapping = "parameters",
+  type = "enum",
+  desc = "AWS Bedrock Anthropic model ID. See https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html for available models.",
+  default = "us.anthropic.claude-sonnet-4-20250514-v1:0",
+  choices = {
+    ["us.anthropic.claude-opus-4-20250514-v1:0"] = { opts = { can_reason = true, has_vision = true } },
+    ["us.anthropic.claude-sonnet-4-20250514-v1:0"] = { opts = { can_reason = true, has_vision = true } },
+    ["us.anthropic.claude-3-5-sonnet-20241022-v1:0"] = { opts = { has_vision = true } },
+    ["us.anthropic.claude-3-5-haiku-20241022-v1:0"] = { opts = { has_vision = true } },
+    ["us.anthropic.claude-3-opus-20240229-v1:0"] = { opts = { has_vision = true } },
+    ["us.anthropic.claude-3-sonnet-20240229-v1:0"] = { opts = { has_vision = true } },
+    ["us.anthropic.claude-3-haiku-20240307-v1:0"] = { opts = { has_vision = true } },
+    ["us.anthropic.claude-v2:1"] = {},
+    ["us.anthropic.claude-v2"] = {},
   },
-  bedrock_mode = nil,
-  bedrock_url = nil,
-  aws_region = {
-    order = 15,
-    mapping = "env",
-    type = "string",
-    optional = true,
-    default = "us-east-1",
-    desc = "AWS region for Bedrock API calls",
-  },
-})
+}
+
+bedrock_adapter.schema.aws_region = {
+  order = 15,
+  mapping = "env",
+  type = "string",
+  optional = true,
+  default = "us-east-1",
+  desc = "AWS region for Bedrock API calls",
+}
 
 return bedrock_adapter
 
